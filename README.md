@@ -1,6 +1,6 @@
 # 🚀 Nave a la deriva
 
-Solución al reto **AltScore S1E7**: una API que simula la llamada de auxilio de una nave averiada para que un robot de reparación la encuentre y sepa qué sistema arreglar.
+Solución a los retos **AltScore S1E7** y **S1E9**: una API que simula la llamada de auxilio de una nave averiada para que un robot de reparación la encuentre, sepa qué sistema arreglar y reconstruya la curva de saturación del fluido hidráulico.
 
 **Stack:** TypeScript · Node.js · Express 5
 
@@ -46,6 +46,32 @@ Devuelve una página HTML con el código del sistema averiado dentro de `<div cl
 
 Responde con el código de estado **418 I'm a teapot**.
 
+### `GET /phase-change-diagram?pressure=<MPa>` (S1E9)
+
+Devuelve los volúmenes específicos de líquido y vapor saturados para una presión dada.
+
+```
+GET /phase-change-diagram?pressure=10
+```
+
+```json
+{
+  "specific_volume_liquid": 0.0035,
+  "specific_volume_vapor": 0.0035
+}
+```
+
+**Modelo:** según el diagrama P-v del cuaderno del ingeniero, las líneas de saturación son rectas que se unen en el punto crítico. Cada volumen se obtiene por interpolación lineal entre la isoterma de 30 °C y el punto crítico:
+
+| Punto              | P (MPa) | v líquido (m³/kg) | v vapor (m³/kg) |
+|--------------------|---------|-------------------|-----------------|
+| Isoterma de 30 °C  | 0.05    | 0.00105           | 30              |
+| Punto crítico      | 10      | 0.0035            | 0.0035          |
+
+Como el robot solo consulta temperaturas mayores a 30 °C, se aceptan presiones entre 0.05 y 10 MPa. Fuera de ese rango, o si `pressure` falta o no es numérico, responde **400** con un mensaje de error.
+
+La lógica está aislada en [`src/phaseChange.ts`](src/phaseChange.ts).
+
 ---
 
 ## Decisión de diseño
@@ -80,6 +106,7 @@ El servidor escucha en el puerto definido por la variable `PORT` (por defecto `3
 curl http://localhost:3000/status
 curl http://localhost:3000/repair-bay
 curl -i -X POST http://localhost:3000/teapot
+curl "http://localhost:3000/phase-change-diagram?pressure=10"
 ```
 
 ---
@@ -102,6 +129,7 @@ El proyecto incluye un `.npmrc` que fija el registro público de npm, para que l
 
 - `main`: versión desplegada
 - `develop`: integración
-- `E7/nave-a-la-deriva`: desarrollo del reto
+- `E7/nave-a-la-deriva`: desarrollo del reto S1E7
+- `E9/phase-change-diagram`: desarrollo del reto S1E9
 
-Los cambios se hacen en la rama del reto y se integran a `develop` y luego a `main` mediante merge.
+Los cambios se hacen en la rama de cada reto y se integran a `develop` y luego a `main` mediante merge.
